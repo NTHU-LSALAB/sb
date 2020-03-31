@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package pb;
+
+service Scoreboard {
+  rpc Submit(UserSubmission) returns (SubmissionReply) {}
+  rpc QueryHomework(QueryHomeworkRequest) returns (Homework) {}
+}
+
+message QueryHomeworkRequest { string name = 1; }
+
+message Homework {
+  string name = 1;
+  string target = 2;
+  string runner = 3;
+  repeated SourceFile files = 4;
+  double penalty_time = 5;
+  repeated string cases = 6;
+}
+
+message SourceFile {
+  string name = 1;
+  string fallback = 2;
+}
+
+message SubmissionReply { string message = 1; }
+
+message StoredSubmission {
+  string user = 1;
+  repeated Result results = 2;
+}
+
+message UserSubmission {
+  string user = 1;
+  string secret = 2;
+  string homework = 3;
+  repeated Result results = 4;
+  bytes code = 5;
+}
+
+message Result {
+  string case = 1;
+  bool passed = 2;
+  double time = 3;
+  string verdict = 4;
+}

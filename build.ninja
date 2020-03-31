@@ -1,0 +1,14 @@
+rule proto
+  command = protoc -I. $in --go_out=plugins=grpc:pb
+
+rule hack
+  command = printf 'package main\n\nconst htmlTemplateString = `' > $out && cat $in >> $out && echo '`' >> $out
+
+rule go
+  command = go build ./cmd/$out
+
+build pb/scoreboard.pb.go: proto scoreboard.proto
+build cmd/sb/embed.go: hack cmd/sb/template.html
+build always: phony
+build sb: go always pb/scoreboard.pb.go cmd/sb/embed.go
+build xjudge: go always pb/scoreboard.pb.go
