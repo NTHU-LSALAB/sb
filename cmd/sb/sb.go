@@ -237,6 +237,8 @@ func (b *Board) renderBoard() {
 }
 
 func (b *Board) updateSubmission(new *pb.UserSubmission) string {
+	b.submissionLock.Lock()
+	defer b.submissionLock.Unlock()
 	old, ok := b.submissions[new.User]
 	newScore := calcScore(b.Homework, new.Results)
 	if !ok || newScore.Better(old.Score) { // new <= old
