@@ -13,6 +13,8 @@ import (
 	"os/signal"
 	"os/user"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -145,10 +147,12 @@ type Rule struct {
 	Optional    []OptionalFile
 	Runner      string
 	SkipCompile bool
+	MedianOf    int
 }
 
 // judgeRequest is a request for judgeing a single case
 type judgeRequest struct {
+	CaseID     int
 	CaseName   string
 	Executable string
 	Runner     string
@@ -156,11 +160,21 @@ type judgeRequest struct {
 
 // judgeResult is the result of judging a single case
 type judgeResult struct {
-	CaseName string
+	CaseID   int    `json:"-"`
+	CaseName string `json:"-"`
 	Passed   bool
 	Time     float64
 	Verdict  string
 	Details  string
+}
+
+func (jr judgeResult) toProto() *pb.Result {
+	return &pb.Result{
+		Case:    jr.CaseName,
+		Passed:  jr.Passed,
+		Time:    jr.Time,
+		Verdict: jr.Verdict,
+	}
 }
 
 func (jr judgeResult) formatDescription() string {
@@ -188,6 +202,7 @@ func judgeCase(ctx context.Context, jr judgeRequest) judgeResult {
 	err := cmd.Start()
 	if err != nil {
 		return judgeResult{
+			jr.CaseID,
 			jr.CaseName,
 			false,
 			time.Now().Sub(t0).Seconds(),
@@ -217,6 +232,7 @@ func judgeCase(ctx context.Context, jr judgeRequest) judgeResult {
 	close(cmdDone)
 	if err != nil {
 		return judgeResult{
+			jr.CaseID,
 			jr.CaseName,
 			false,
 			time.Now().Sub(t0).Seconds(),
@@ -224,10 +240,14 @@ func judgeCase(ctx context.Context, jr judgeRequest) judgeResult {
 			fmt.Sprintf("could not execute runner: %v", err),
 		}
 	}
-	result := judgeResult{}
+	result := judgeResult{
+		CaseID:   jr.CaseID,
+		CaseName: jr.CaseName,
+	}
 	err = json.Unmarshal(output.Bytes(), &result)
 	if err != nil {
 		return judgeResult{
+			jr.CaseID,
 			jr.CaseName,
 			false,
 			time.Now().Sub(t0).Seconds(),
@@ -235,7 +255,6 @@ func judgeCase(ctx context.Context, jr judgeRequest) judgeResult {
 			fmt.Sprintf("runner output invalid: %v", err),
 		}
 	}
-	result.CaseName = jr.CaseName
 	return result
 }
 
@@ -269,11 +288,14 @@ func judge(ctx context.Context, rule Rule, cases []string) []*pb.Result {
 	}
 
 	go func() {
-		for _, casename := range cases {
-			requests <- judgeRequest{
-				CaseName:   casename,
-				Executable: exe,
-				Runner:     rule.Runner,
+		for caseID, casename := range cases {
+			for i := 0; i < rule.MedianOf; i++ {
+				requests <- judgeRequest{
+					CaseID:     caseID,
+					CaseName:   casename,
+					Executable: exe,
+					Runner:     rule.Runner,
+				}
 			}
 		}
 		close(requests)
@@ -286,26 +308,43 @@ func judge(ctx context.Context, rule Rule, cases []string) []*pb.Result {
 		}
 	}
 
+	printResult := func(result judgeResult, hint string) {
+		log.Printf("%*s%s %7.2f   %s",
+			caseWidth,
+			result.CaseName,
+			hint,
+			result.Time,
+			result.formatDescription(),
+		)
+	}
+
 	result := make([]*pb.Result, 0, len(cases))
-	for range cases {
+	buffer := make([][]judgeResult, len(cases))
+	medNumWidth := len(strconv.Itoa(rule.MedianOf))
+	I := len(cases) * rule.MedianOf
+	for i := 0; i < I; i++ {
 		select {
 		case <-ctx.Done():
 			return result
 		case response := <-responses:
-			log.Printf("%*s %7.2f   %s",
-				caseWidth,
-				response.CaseName,
-				response.Time,
-				response.formatDescription(),
-			)
-			result = append(result,
-				&pb.Result{
-					Case:    response.CaseName,
-					Passed:  response.Passed,
-					Time:    response.Time,
-					Verdict: response.Verdict,
-				},
-			)
+			if rule.MedianOf > 1 {
+				buffer[response.CaseID] = append(buffer[response.CaseID], response)
+				printResult(response, fmt.Sprintf("#%0*d", medNumWidth, len(buffer[response.CaseID])))
+				if len(buffer[response.CaseID]) == rule.MedianOf {
+					runs := buffer[response.CaseID]
+					sort.Slice(runs, func(i, j int) bool {
+						if runs[i].Passed == runs[j].Passed {
+							return runs[i].Time < runs[j].Time
+						}
+						return runs[i].Passed
+					})
+					result = append(result, runs[rule.MedianOf/2].toProto())
+					printResult(runs[rule.MedianOf/2], fmt.Sprintf(" %*s", medNumWidth, ""))
+				}
+			} else {
+				printResult(response, "")
+				result = append(result, response.toProto())
+			}
 		}
 	}
 	return result
@@ -321,6 +360,7 @@ type Options struct {
 	Server       string   // the judge server
 	Homework     string   // the name of the homework
 	Bin          string   // skip compiling and use the given binary. privileged.
+	MedianOf     int      // run each case multiple times and pick the median as the result
 }
 
 // MainOptions runs the judge with the given options
@@ -391,10 +431,15 @@ func MainOptions(options *Options) {
 		}
 	}
 
+	if options.MedianOf%2 == 0 {
+		log.Fatal("Refusing to pick a median from a even number of runs")
+	}
+
 	rule := Rule{
 		Target:   hw.Target,
 		Runner:   hw.Runner,
 		Optional: make([]OptionalFile, len(hw.Files)),
+		MedianOf: options.MedianOf,
 	}
 
 	for i, source := range hw.Files {
