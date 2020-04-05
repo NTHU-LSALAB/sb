@@ -85,6 +85,14 @@ const htmlTemplateString = `<!DOCTYPE html>
     th {
       padding: 3px;
     }
+
+    td.penalty::before {
+      content: "(+";
+    }
+
+    td.penalty::after {
+      content: ")";
+    }
   </style>
 </head>
 
@@ -117,9 +125,7 @@ const htmlTemplateString = `<!DOCTYPE html>
           <td>
             {{$row.TotalTime | printf "%.2f"}}
           </td>
-          <td>
-            {{if gt $row.PenaltyTime 0.0}}(+{{$row.PenaltyTime | printf "%.0f"}}){{end}}
-          </td>
+          {{if gt $row.PenaltyTime 0.0}}<td class="penalty">{{$row.PenaltyTime | printf "%.0f"}}</td>{{else}}<td></td>{{end}}
           {{range $cell := $row.Cells}}
           <td class="{{$cell.Class}}" title="{{$cell.Title}}">{{$cell.Value}}</td>
           {{end}}
