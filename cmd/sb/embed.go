@@ -113,7 +113,7 @@ const htmlTemplateString = `<!DOCTYPE html>
         <th class="center">Passed</th>
         <th class="center" colspan="2">Time</th>
         {{range $name := .Homework.Cases}}
-        <th class="center">{{$name}}</th>
+        <th>{{$name}}</th>
         {{end}}
       </thead>
       <tbody>
