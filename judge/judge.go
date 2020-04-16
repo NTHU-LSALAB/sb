@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -371,7 +372,11 @@ func MainOptions(options *Options) {
 			log.Fatalf("failed to chdir: %v", err)
 		}
 	}
-	conn, err := grpc.Dial(options.Server, grpc.WithInsecure(), grpc.WithBlock())
+	if !strings.HasPrefix(options.Server, "unix://") && strings.ContainsRune(options.Server, '/') {
+		options.Server = "unix://" + options.Server
+	}
+	conn, err := grpc.Dial(options.Server,
+		grpc.WithInsecure(), grpc.WithBlock(), grpc.FailOnNonTempDialError(true))
 	if err != nil {
 		log.Fatalf("failed to connect: %v", err)
 	}
@@ -465,7 +470,6 @@ func MainOptions(options *Options) {
 	sbCtx, sbCancel := context.WithTimeout(context.Background(), time.Second*3)
 	r, err := c.Submit(sbCtx, &pb.UserSubmission{
 		User:     options.AsUser,
-		Secret:   sb.WeakTokenForHomework(options.AsUser, hw.Name),
 		Homework: hw.Name,
 		Results:  result,
 	})

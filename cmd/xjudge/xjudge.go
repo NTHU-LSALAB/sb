@@ -36,7 +36,7 @@ func parseOptions() *judge.Options {
 	}
 	fs.StringVar(&opt.Homework, "homework", homework, "Judge the specific homework.")
 	fs.StringVar(&opt.Bin, "bin", "", "Skip compiling and use the given binary. Privileged option.")
-	fs.StringVar(&opt.Server, "server", sb.Addr, "Address of the scoreboard server.")
+	fs.StringVar(&opt.Server, "server", sb.DefaultAddr, "Address of the scoreboard server. If it contains a slash, it is treated as a unix domain socket, otherwise it is treated as a tcp socket.")
 	fs.IntVar(&opt.MedianOf, "median-of", 1, "Run each case multiple times and pick the median. Must be an odd integer.")
 
 	fs.StringArrayVarP(&opt.ExcludeCases, "exclude", "x", nil, "Exclude the given test cases. Specify this option multiple times to exclude multiple test cases.")

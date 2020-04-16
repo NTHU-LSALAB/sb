@@ -319,13 +319,6 @@ func newServer() *server {
 	return s
 }
 
-func verifySubmissionSecret(sub *pb.UserSubmission) error {
-	if sb.WeakTokenForHomework(sub.User, sub.Homework) == sub.Secret {
-		return nil
-	}
-	return errors.New("Invalid secret")
-}
-
 func (s *server) updateSubmission(new *pb.UserSubmission) (string, error) {
 	board, ok := s.boards[new.Homework]
 	if !ok {
@@ -335,10 +328,6 @@ func (s *server) updateSubmission(new *pb.UserSubmission) (string, error) {
 }
 
 func (s *server) handleSubmit(ctx context.Context, sub *pb.UserSubmission) (rep *pb.SubmissionReply, err error) {
-	err = verifySubmissionSecret(sub)
-	if err != nil {
-		return
-	}
 	msg, err := s.updateSubmission(sub)
 	if err != nil {
 		return
@@ -369,13 +358,14 @@ var serverAddress string
 var outputDir string
 
 func init() {
-	pflag.StringVar(&serverAddress, "address", sb.Addr, "the address of the server")
+	pflag.StringVar(&serverAddress, "address", sb.DefaultAddr,
+		"the address of the server to listen to. "+
+			"If it contains a slash, it is treated as a unix domain socket, "+
+			"otherwise it is treated as a tcp socket")
 	pflag.StringVar(&outputDir, "outputdir", "out", "html output directory")
 }
 
 func main() {
-	sb.EnsureSecret()
-
 	pflag.Parse()
 
 	err := os.MkdirAll(outputDir, 0755)
@@ -386,9 +376,23 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create storage directory %s: %v", sb.StorageDir, err)
 	}
-	lis, err := net.Listen("tcp", serverAddress)
+	network := "tcp"
+	if strings.ContainsRune(serverAddress, '/') {
+		network = "unix"
+		err = os.Remove(serverAddress)
+		if err != nil && !os.IsNotExist(err) {
+			log.Fatalf("failed to remove existing unix socket: %v", err)
+		}
+	}
+	lis, err := net.Listen(network, serverAddress)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
+	}
+	if network == "unix" {
+		err = os.Chmod(serverAddress, 0660)
+		if err != nil {
+			log.Fatalf("failed to set unix socket permission")
+		}
 	}
 	gs := grpc.NewServer()
 	s := newServer()

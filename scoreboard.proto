@@ -32,7 +32,7 @@ message StoredSubmission {
 
 message UserSubmission {
   string user = 1;
-  string secret = 2;
+  // string secret = 2;
   string homework = 3;
   repeated Result results = 4;
   bytes code = 5;

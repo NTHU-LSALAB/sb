@@ -1,8 +1,7 @@
 set -ex
 # Common
-sudo install -Dm440 -gscoreboardd judge.secret /etc/judge.secret
-sudo install -Dm440 -gta judge.secret /etc/judge.priv
-sudo setfacl -m g:ta:r /etc/judge.secret
+sudo install -Dm440 -gta /dev/null /etc/judge.priv
+sudo install -dm750 -oscoreboardd -gscoreboardd /run/scoreboard
 
 # Judge
 sudo install -Dm2711 -gscoreboardd xjudge /usr/local/bin/xjudge

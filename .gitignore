@@ -3,5 +3,4 @@
 out/
 config/
 storage/
-judge.secret
 .ninja*
