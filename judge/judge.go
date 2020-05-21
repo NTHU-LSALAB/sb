@@ -254,13 +254,17 @@ func judgeCase(ctx context.Context, jr judgeRequest) judgeResult {
 	}
 	err = json.Unmarshal(output.Bytes(), &result)
 	if err != nil {
+		errMsg := fmt.Sprintf("%v", err)
+		if jr.Debug {
+			errMsg += ": " + string(output.Bytes())
+		}
 		return judgeResult{
 			jr.CaseID,
 			jr.CaseName,
 			false,
 			time.Now().Sub(t0).Seconds(),
 			"internal error",
-			fmt.Sprintf("runner output invalid: %v", err),
+			fmt.Sprintf("runner output invalid: %v", errMsg),
 		}
 	}
 	return result
