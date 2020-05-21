@@ -8,8 +8,6 @@ import (
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
-	codes "google.golang.org/grpc/codes"
-	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -412,9 +410,7 @@ func init() {
 	proto.RegisterType((*Result)(nil), "pb.Result")
 }
 
-func init() {
-	proto.RegisterFile("scoreboard.proto", fileDescriptor_ff350828fb116070)
-}
+func init() { proto.RegisterFile("scoreboard.proto", fileDescriptor_ff350828fb116070) }
 
 var fileDescriptor_ff350828fb116070 = []byte{
 	// 415 bytes of a gzipped FileDescriptorProto
@@ -448,11 +444,11 @@ var fileDescriptor_ff350828fb116070 = []byte{
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
-var _ grpc.ClientConnInterface
+var _ grpc.ClientConn
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion6
+const _ = grpc.SupportPackageIsVersion4
 
 // ScoreboardClient is the client API for Scoreboard service.
 //
@@ -463,10 +459,10 @@ type ScoreboardClient interface {
 }
 
 type scoreboardClient struct {
-	cc grpc.ClientConnInterface
+	cc *grpc.ClientConn
 }
 
-func NewScoreboardClient(cc grpc.ClientConnInterface) ScoreboardClient {
+func NewScoreboardClient(cc *grpc.ClientConn) ScoreboardClient {
 	return &scoreboardClient{cc}
 }
 
@@ -492,17 +488,6 @@ func (c *scoreboardClient) QueryHomework(ctx context.Context, in *QueryHomeworkR
 type ScoreboardServer interface {
 	Submit(context.Context, *UserSubmission) (*SubmissionReply, error)
 	QueryHomework(context.Context, *QueryHomeworkRequest) (*Homework, error)
-}
-
-// UnimplementedScoreboardServer can be embedded to have forward compatible implementations.
-type UnimplementedScoreboardServer struct {
-}
-
-func (*UnimplementedScoreboardServer) Submit(ctx context.Context, req *UserSubmission) (*SubmissionReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Submit not implemented")
-}
-func (*UnimplementedScoreboardServer) QueryHomework(ctx context.Context, req *QueryHomeworkRequest) (*Homework, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method QueryHomework not implemented")
 }
 
 func RegisterScoreboardServer(s *grpc.Server, srv ScoreboardServer) {
