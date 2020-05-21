@@ -149,6 +149,7 @@ type Rule struct {
 	Runner      string
 	SkipCompile bool
 	MedianOf    int
+	Debug       bool
 }
 
 // judgeRequest is a request for judgeing a single case
@@ -157,6 +158,7 @@ type judgeRequest struct {
 	CaseName   string
 	Executable string
 	Runner     string
+	Debug      bool
 }
 
 // judgeResult is the result of judging a single case
@@ -192,7 +194,12 @@ func (jr judgeResult) formatDescription() string {
 }
 
 func judgeCase(ctx context.Context, jr judgeRequest) judgeResult {
-	cmd := exec.Command(jr.Runner, jr.CaseName, jr.Executable)
+	var cmd *exec.Cmd
+	if jr.Debug {
+		cmd = exec.Command(jr.Runner, "--debug", jr.CaseName, jr.Executable)
+	} else {
+		cmd = exec.Command(jr.Runner, jr.CaseName, jr.Executable)
+	}
 	output := bytes.NewBuffer(nil)
 	cmd.Stdout = output
 	// cmd.Stderr = os.Stderr
@@ -296,6 +303,7 @@ func judge(ctx context.Context, rule Rule, cases []string) []*pb.Result {
 					CaseName:   casename,
 					Executable: exe,
 					Runner:     rule.Runner,
+					Debug:      rule.Debug,
 				}
 			}
 		}
@@ -362,6 +370,7 @@ type Options struct {
 	Homework     string   // the name of the homework
 	Bin          string   // skip compiling and use the given binary. privileged.
 	MedianOf     int      // run each case multiple times and pick the median as the result
+	Debug        bool     // output debug messages
 }
 
 // MainOptions runs the judge with the given options
@@ -445,6 +454,7 @@ func MainOptions(options *Options) {
 		Runner:   hw.Runner,
 		Optional: make([]OptionalFile, len(hw.Files)),
 		MedianOf: options.MedianOf,
+		Debug:    options.Debug,
 	}
 
 	for i, source := range hw.Files {

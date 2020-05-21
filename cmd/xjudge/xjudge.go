@@ -42,6 +42,8 @@ func parseOptions() *judge.Options {
 	fs.StringArrayVarP(&opt.ExcludeCases, "exclude", "x", nil, "Exclude the given test cases. Specify this option multiple times to exclude multiple test cases.")
 	fs.StringArrayVarP(&opt.IncludeCases, "include", "i", nil, "Include the given test cases. Specify this option multiple times to include multiple test cases. --include takes higher priority than exclude. If --include is specified but --exclude is not specified, the judge will only run only the --include'd test cases. For both --include and --exclude, []-expansion is supported. --include=case[01-03] expands to --include=case01 --include=case02 --include=case03. --exclude=case[01,04] expands to --exclude=case01 --exclude=case04.")
 
+	fs.BoolVar(&opt.Debug, "debug", false, "Output debug messages")
+
 	fs.Parse(os.Args[1:])
 
 	return opt
