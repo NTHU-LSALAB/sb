@@ -197,17 +197,26 @@ func judgeCase(ctx context.Context, jr judgeRequest) judgeResult {
 	var cmd *exec.Cmd
 	if jr.Debug {
 		cmd = exec.Command(jr.Runner, "--debug", jr.CaseName, jr.Executable)
+		cmd.Stderr = os.Stderr
 	} else {
 		cmd = exec.Command(jr.Runner, jr.CaseName, jr.Executable)
 	}
 	output := bytes.NewBuffer(nil)
 	cmd.Stdout = output
-	// cmd.Stderr = os.Stderr
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
 	}
 	t0 := time.Now()
 	err := cmd.Start()
+	extraDetail := func() string {
+		if !jr.Debug {
+			return ""
+		}
+		if cmd.Process == nil {
+			return fmt.Sprintf("\nrunner command: %s", cmd)
+		}
+		return fmt.Sprintf("\nrunner pid: %d, command: %s", cmd.Process.Pid, cmd)
+	}
 	if err != nil {
 		return judgeResult{
 			jr.CaseID,
@@ -215,7 +224,7 @@ func judgeCase(ctx context.Context, jr judgeRequest) judgeResult {
 			false,
 			time.Now().Sub(t0).Seconds(),
 			"internal error",
-			fmt.Sprintf("could not start runner: %v", err),
+			fmt.Sprintf("could not start runner: %v%s", err, extraDetail()),
 		}
 	}
 	pgid, err := syscall.Getpgid(cmd.Process.Pid)
@@ -245,7 +254,7 @@ func judgeCase(ctx context.Context, jr judgeRequest) judgeResult {
 			false,
 			time.Now().Sub(t0).Seconds(),
 			"internal error",
-			fmt.Sprintf("could not execute runner: %v", err),
+			fmt.Sprintf("could not execute runner: %v%s", err, extraDetail()),
 		}
 	}
 	result := judgeResult{
@@ -264,9 +273,10 @@ func judgeCase(ctx context.Context, jr judgeRequest) judgeResult {
 			false,
 			time.Now().Sub(t0).Seconds(),
 			"internal error",
-			fmt.Sprintf("runner output invalid: %v", errMsg),
+			fmt.Sprintf("runner output invalid: %v%s", errMsg, extraDetail()),
 		}
 	}
+	result.Details += extraDetail()
 	return result
 }
 
