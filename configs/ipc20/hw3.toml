@@ -1,0 +1,22 @@
+# The ninja build target of the homework (or the name of the executable)
+# If not provided, defaults to the name of the homework (which is the name of the .toml file)
+target = "hw3"
+
+# The absolute path runner for the homework
+runner = "/home/ipc20/ta/hw3/runner.py"
+
+# Files to copy before compiling
+files = [
+    {name = "hw3.cu"},
+    {name = "build.ninja", fallback = "/home/ipc20/ta/hw3/build.ninja"},
+]
+
+# Time penalty for failing a test case
+penalty_time = 75
+
+# Name of the test cases
+cases = [
+    "a[1-2]",
+    "b1",
+    "c[1-5]",
+]
