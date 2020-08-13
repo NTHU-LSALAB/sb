@@ -41,7 +41,7 @@ Homeworks are specified in the scoreboard's `./config/*.toml` files. See `config
 
 ### Runner
 
-Runners are used to actually run each test case, specified by the test cases' name.
+Runners are used to actually run each test case, specified by the test cases' name. See `runners/` in this repository for examples.
 
 `xjudge` runs each test case with: `runner [--debug] casename executable`. Where:
    * `runner` is the absolute path of the runner
