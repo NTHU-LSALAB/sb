@@ -22,19 +22,10 @@ Run the `sb` binary as the scoreboard user. The `sb` command runs the scoreboard
 ## Judging Procedure
 
 1. Every time `xjudge` is invoked by a user, it first determines which homework it is judging. Running `xjudge --homework hw1` judges `hw1`. If `/usr/local/bin/hw1-judge is a symbolic link to xjudge`, then running `hw1-judge` also judges `hw1`.
-2. It communicates with the scoreboard server to ask about the configuration of the the homework.
+2. It communicates with the scoreboard server to ask about the configuration of the the homework. See [Configuration](#configuration).
 3. It copies the *files* to a temporary directory.
 4. It tries to build the *target* using `ninja`.
-5. It run the *cases* with the *runner*. Each case is run with: `runner [--debug] casename executable`. Where:
-   * `runner` is the absolute path of the runner
-   * `[--debug]` is used to enable verbose output of the runner
-   * `casename` is the name of the test case
-   * `executable` is the *target* executable built by the students' code
-   For each case, the runner outputs JSON in stdout, with 4 attributes:
-   * `passed`: bool, whether the test case is passed
-   * `time`: float, the execution time of the test case
-   * `verdict`: string, such as `Accepted`, `Wrong Answer`, etc
-   * `details`: string, optional description for the verdict
+5. It run the *cases* with the *runner*. See [Runner](#runner).
 6. After collecting the results from the runners, the judge submit the results to the scoreboard.
 
 ## Homework Configuration
@@ -47,3 +38,18 @@ Homeworks are specified in the scoreboard's `./config/*.toml` files. See `config
 3. `files`: mandantory and optional files for the homework. 
 4. `penalty_time`: time penalty for failing a test case in seconds.
 5. `cases`: test case names.
+
+### Runner
+
+Runners are used to actually run each test case, specified by the test cases' name.
+
+`xjudge` runs each test case with: `runner [--debug] casename executable`. Where:
+   * `runner` is the absolute path of the runner
+   * `--debug` is a optional flag used to enable verbose output of the runner
+   * `casename` is the name of the test case
+   * `executable` is the *target* executable built by the students' code
+   For each case, the runner outputs JSON in stdout, with 4 attributes:
+   * `passed`: bool, whether the test case is passed
+   * `time`: float, the execution time of the test case
+   * `verdict`: string, such as `Accepted`, `Wrong Answer`, etc
+   * `details`: string, optional description for the verdict
