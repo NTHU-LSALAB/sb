@@ -18,3 +18,32 @@ Run the `sb` binary as the scoreboard user. The `sb` command runs the scoreboard
 * Configuration files are read from `./config`.
 * Data is stored in `./storage`
 * HTML scoreboard is output in the `./out` directory. This can be changed by the `--outputdir` flag.
+
+## Judging Procedure
+
+1. Every time `xjudge` is invoked by a user, it first determines which homework it is judging. Running `xjudge --homework hw1` judges `hw1`. If `/usr/local/bin/hw1-judge is a symbolic link to xjudge`, then running `hw1-judge` also judges `hw1`.
+2. It communicates with the scoreboard server to ask about the configuration of the the homework.
+3. It copies the *files* to a temporary directory.
+4. It tries to build the *target* using `ninja`.
+5. It run the *cases* with the *runner*. Each case is run with: `runner [--debug] casename executable`. Where:
+   * `runner` is the absolute path of the runner
+   * `[--debug]` is used to enable verbose output of the runner
+   * `casename` is the name of the test case
+   * `executable` is the *target* executable built by the students' code
+   For each case, the runner outputs JSON in stdout, with 4 attributes:
+   * `passed`: bool, whether the test case is passed
+   * `time`: float, the execution time of the test case
+   * `verdict`: string, such as `Accepted`, `Wrong Answer`, etc
+   * `details`: string, optional description for the verdict
+6. After collecting the results from the runners, the judge submit the results to the scoreboard.
+
+## Homework Configuration
+
+### Configuration
+
+Homeworks are specified in the scoreboard's `./config/*.toml` files. See `configs/` in this repository for examples. Each homework is specified by a config file. Each config file specify:
+1. `target`: the ninja build target.
+2. `runner`: the absolute path of the runner.
+3. `files`: mandantory and optional files for the homework. 
+4. `penalty_time`: time penalty for failing a test case in seconds.
+5. `cases`: test case names.
