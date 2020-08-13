@@ -21,7 +21,7 @@ Run the `sb` binary as the scoreboard user. The `sb` command runs the scoreboard
 
 ## Judging Procedure
 
-1. Every time `xjudge` is invoked by a user, it first determines which homework it is judging. Running `xjudge --homework hw1` judges `hw1`. If `/usr/local/bin/hw1-judge is a symbolic link to xjudge`, then running `hw1-judge` also judges `hw1`.
+1. Every time `xjudge` is invoked by a user, it first determines which homework it is judging. Running `xjudge --homework hw1` judges `hw1`. If `/usr/local/bin/hw1-judge` is a symbolic link to `xjudge`, then running `hw1-judge` also judges `hw1`.
 2. It communicates with the scoreboard server to ask about the configuration of the the homework. See [Configuration](#configuration).
 3. It copies the *files* to a temporary directory.
 4. It tries to build the *target* using `ninja`.
