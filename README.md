@@ -48,7 +48,8 @@ Runners are used to actually run each test case, specified by the test cases' na
    * `--debug` is a optional flag used to enable verbose output of the runner
    * `casename` is the name of the test case
    * `executable` is the *target* executable built by the students' code
-For each case, the runner outputs JSON in stdout, with 4 attributes:
+
+The runner outputs JSON in stdout, with 4 attributes:
    * `passed`: bool, whether the test case is passed
    * `time`: float, the execution time of the test case
    * `verdict`: string, such as `Accepted`, `Wrong Answer`, etc
