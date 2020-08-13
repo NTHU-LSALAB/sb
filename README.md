@@ -11,3 +11,10 @@ judge &amp; scoreboard server for parallel programming coureses
 6. Create the directory for the scoreboard socket. `sudo install -dm750 -oscoreboardd -gscoreboardd /run/scoreboard`
 7. (Optional) Install the TA privilege file `/etc/judge.priv`. Users who can read this file are allowed to use privileged features of the judge. `sudo install -Dm440 -gta /dev/null /etc/judge.priv`
 
+## Running the Scoreboard
+
+Run the `sb` binary as the scoreboard user. The `sb` command runs the scoreboard server, which accepts judge requestse from the `xjudge` command and outputs the scoreboard as HTML files.
+
+* Configuration files are read from `./config`.
+* Data is stored in `./storage`
+* HTML scoreboard is output in the `./out` directory. This can be changed by the `--outputdir` flag.
