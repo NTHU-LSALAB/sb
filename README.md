@@ -26,7 +26,7 @@ Run the `sb` binary as the scoreboard user. The `sb` command runs the scoreboard
 3. It copies the *files* to a temporary directory.
 4. It tries to build the *target* using `ninja`.
 5. It run the *cases* with the *runner*. See [Runner](#runner).
-6. After collecting the results from the runners, the judge submit the results to the scoreboard.
+6. After collecting the results, the judge submit the results to the scoreboard.
 
 ## Homework Configuration
 
