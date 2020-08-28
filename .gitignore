@@ -4,3 +4,4 @@ out/
 config/
 storage/
 .ninja*
+**/.DS_Store
