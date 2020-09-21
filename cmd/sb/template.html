@@ -38,6 +38,10 @@
       td.penalty::before {
         content: "+";
       }
+	  .notation {
+        padding: 5px 20px;
+        display: inline-block;
+      }
     </style>
   </head>
   
@@ -48,7 +52,11 @@
     <br>
     
     <div style="padding: 0px 20px">
-      <div class="container-flux table-responsive">
+      <span class="notation" style="background-color: rgb(56, 142, 60)">AC</span>
+      <span class="notation" style="background-color: rgb(255,193,7)">TLE</span>
+      <span class="notation" style="background-color: rgb(244,67,54)">NA</span>
+      <br><br>
+	  <div class="container-flux table-responsive">
         <table id="thetable" class="table table-sm table-hover" data-fixed-columns=true data-fixed-number=1>
           <thead>
             <tr>
