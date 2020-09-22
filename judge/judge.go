@@ -116,7 +116,7 @@ func compile(ctx context.Context, rule Rule, dir string) bool {
 			return false
 		}
 	}
-	cmd := exec.CommandContext(ctx, "/usr/bin/ninja", "-C", dir, rule.Target)
+	cmd := exec.CommandContext(ctx, "/usr/bin/make", "-C", dir, rule.Target)
 	printCommand(cmd.Args)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
