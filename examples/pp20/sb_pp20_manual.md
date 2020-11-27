@@ -1,6 +1,20 @@
 # PP20 Scoreboard Manual
 Update 2020.10.19
 
+# Installation
+Install go dependence
+```sh
+go get -u github.com/golang/protobuf/protoc-gen-go
+mv ~/go ~/.pkg/
+```
+
+```sh
+git clone https://github.com/NTHU-LSALAB/sb.git
+cd sb
+export PATH=$PATH:$HOME/.pkg/go/bin
+ninja
+```
+
 ## Testcases
 * Put testcases under `/home/pp20/share/XXX/testcases`.
 * Each testcase should specified `salloc` options value (`N`, `n`, `c` and so on) and `argc` values to be feed to the program.
