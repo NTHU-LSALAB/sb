@@ -18,8 +18,9 @@ ninja
 ```
 
 ## Testcases
-* Below we use `XXX` to denote the homework, e.g. `hw1`
+* Below we use `XXX` to denote the homework name, e.g. `hw1`
 * Put testcases under a folder. e.g. `/home/ipc21/share/XXX/testcases/`.
+* Small tips: Put testcases under `/home/ipc21/share/.testcases/XXX/`, and create soft link under `/home/ipc21/share/XXX/testcases/` which links to the real testcases. In this way, when students copy the entire folder `/home/ipc21/share/XXX/`, they won't copy the real testcase, which can save a lot of disk spaces.
 * Each testcase should specified `salloc` options value (`N`, `n`, `c` and so on) and `argc` values to be feed to the program.
 * The testcase can be any filetype you like (e.g. `.txt`, `.json`). Only need to implement the corresponding parser in `runner.py`
 * Make sure normal user can't write to testcases.
@@ -108,7 +109,7 @@ ninja
 * run `squeue` to make sure no one is running the judger right now
 * `tmux a`
 * `ctrl-C` the current running `sb`.
-* Make sure you are under the diectory `/home/scoreboardd/ipc21`
+* `cd /home/scoreboardd/ipc21`
 * `./sb --outputdir /srv/http/ipc21/scoreboard/`
 
 ## Testing
