@@ -1,8 +1,8 @@
-# PP20 Scoreboard Manual
+# IPC21 Scoreboard Manual
 Update 2021.03.09
 
 # Installation
-On apollo and hades, under user scoreboardd's home directory, sb has already compiled and installed. You may skip this step.
+On apollo, sb has already compiled and installed under `/home/scoreboardd/ipc21/`. You may skip this step.
 
 Install go dependence
 ```sh
@@ -56,7 +56,7 @@ ninja
 ## `runner.py`
 * Create a file named `runner.py` under `/home/ipc21/ta/XXX`
 * You may refer to the example `runner.py` under `/home/pp20/ta/`
-* Edit the class `XXXRunner`
+* For all homeworks, we only need to edit the class `XXXRunner`
     ```py
     class XXXRunner(SallocRunner):
         def __init__(self, **kwargs):
@@ -96,14 +96,19 @@ ninja
             if output != answer:
                 raise ValidationError(f'expected {answer!r}; got {output!r}')
     ```
+* And `main`
+    ```py
+    if __name__ == '__main__':
+        XXXRunner.main()
+    ```
 * `chmod 775 runner.py`
 
 ## Restart the scoreboard
 * Login to user `scoreboardd`
 * run `squeue` to make sure no one is running the judger right now
 * `tmux a`
-* `ctrl-C` the current running scoreboard.
-* Make sure you are under the diectory `/home/scoreboardd/pp21`
+* `ctrl-C` the current running `sb`.
+* Make sure you are under the diectory `/home/scoreboardd/ipc21`
 * `./sb --outputdir /srv/http/ipc21/scoreboard/`
 
 ## Testing
