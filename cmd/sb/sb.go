@@ -92,7 +92,7 @@ type Board struct {
 }
 
 func isStudent(username string) bool {
-	return strings.HasPrefix(username, "pp20s")
+	return strings.HasPrefix(username, "ipc21s")
 }
 
 // Rows is for use in template
