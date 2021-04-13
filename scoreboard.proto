@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+option go_package="github.com/NTHU-lsalab/sb/pb";
+
 package pb;
 
 service Scoreboard {

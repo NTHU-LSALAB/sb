@@ -5,3 +5,4 @@ config/
 storage/
 .ninja*
 **/.DS_Store
+pb/github.com
