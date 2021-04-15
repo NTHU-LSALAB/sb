@@ -122,3 +122,23 @@ To test the scoreboard, do the following.
 cd /usr/local/bin
 sudo ln -s xjudge XXX-judge
 ```
+
+## Run on Hades server
+Since the web server is running on apollo. We want to keep using the `sb` on apollo instead of run another one on hades. `sb` and `xjudge` communicate through socket. Currently, we use `ssh` to forward the socket.
+1. On hades:
+    ```sh
+    sudo install -dm750 -oscoreboardd -gscoreboardd /run/scoreboard
+    ```
+    Also, compile and install `xjudge` just like we do on apollo.
+2. On scoreboardd@apollo
+    ```sh
+    tmux a # connect to a tmux session
+    ssh -R /run/scoreboard/sb.sock:/run/scoreboard/sb.sock hades.cs.nthu.edu.tw
+    # And keep this ssh connection alive
+    # If you see the error "Warning: remote port forwarding failed for listen path /run/scoreboard/sb.sock",
+    # it's probably that the sb.sock already exist or the folder /run/scoreboard doesn't exits.
+    # Just remove the /run/scoreboard/sb.sock on hades and ssh again.
+    ```
+3. Put config file on apollo instead of on hades. (but the path described in config file is actually the path on hades.)
+4. Release the judge on hades is same as on apollo.
+5. Everytime you update the config file and restart the `sb`, remember to restart the ssh connection as well.
