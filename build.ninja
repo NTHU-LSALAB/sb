@@ -7,8 +7,12 @@ rule hack
 rule go
   command = go build ./cmd/$out
 
+rule go-static
+  command = CGO_ENABLED=0 go build -ldflags='-extldflags=-static' ./cmd/$out
+
 build pb/scoreboard.pb.go: proto scoreboard.proto
 build cmd/sb/embed.go: hack cmd/sb/template.html
 build always: phony
 build sb: go always pb/scoreboard.pb.go cmd/sb/embed.go
-build xjudge: go always pb/scoreboard.pb.go
+build xjudge: go-static always pb/scoreboard.pb.go
+build xjudge-remote: go-static always pb/scoreboard.pb.go

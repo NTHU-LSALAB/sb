@@ -92,7 +92,9 @@ type Board struct {
 }
 
 func isStudent(username string) bool {
-	return strings.HasPrefix(username, "ipc21s")
+	fmt.Println(strings.HasPrefix(username, sb.StudentPrefix))
+	return strings.HasPrefix(username, sb.StudentPrefix)
+	//return strings.Contains(username, "s")
 }
 
 // Rows is for use in template
@@ -337,6 +339,12 @@ func (s *server) handleSubmit(ctx context.Context, sub *pb.UserSubmission) (rep 
 }
 
 func (s *server) Submit(ctx context.Context, sub *pb.UserSubmission) (*pb.SubmissionReply, error) {
+	hash := sb.HashSubmission(sub.User, sub.Homework, sb.HashResult(sub.Results))
+	if hash != sub.Hash {
+		log.Printf("Refused %s/%s: %s", sub.Homework, sub.User, "Hash value is not correct")
+		re := &pb.SubmissionReply{Message: "Invalid request"}
+		return re, nil
+	}
 	rep, err := s.handleSubmit(ctx, sub)
 	if err == nil {
 		log.Printf("Accepted %s/%s: %s", sub.Homework, sub.User, rep.Message)

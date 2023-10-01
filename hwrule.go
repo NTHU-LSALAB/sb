@@ -11,11 +11,12 @@ import (
 
 func LoadHomework(filename string) *pb.Homework {
 	hw := new(struct {
-		Target      string
-		Runner      string
-		Files       []*pb.SourceFile
-		PenaltyTime toml.Primitive `toml:"penalty_time"`
-		Cases       []string
+		Target       string
+		Runner       string
+		RemoteRunner string
+		Files        []*pb.SourceFile
+		PenaltyTime  toml.Primitive `toml:"penalty_time"`
+		Cases        []string
 	})
 	metadata, err := toml.DecodeFile(filename, hw)
 	if err != nil {
@@ -42,11 +43,12 @@ func LoadHomework(filename string) *pb.Homework {
 	}
 	hw.Cases = expandedCases
 	return &pb.Homework{
-		Name:        name,
-		Target:      hw.Target,
-		Runner:      hw.Runner,
-		Files:       hw.Files,
-		PenaltyTime: penaltyTime,
-		Cases:       hw.Cases,
+		Name:         name,
+		Target:       hw.Target,
+		Runner:       hw.Runner,
+		RemoteRunner: hw.RemoteRunner,
+		Files:        hw.Files,
+		PenaltyTime:  penaltyTime,
+		Cases:        hw.Cases,
 	}
 }

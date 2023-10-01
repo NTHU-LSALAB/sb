@@ -18,11 +18,13 @@ message Homework {
   repeated SourceFile files = 4;
   double penalty_time = 5;
   repeated string cases = 6;
+  string RemoteRunner = 7;
 }
 
 message SourceFile {
   string name = 1;
   string fallback = 2;
+  string fallbackRemote = 3;
 }
 
 message SubmissionReply { string message = 1; }
@@ -38,6 +40,7 @@ message UserSubmission {
   string homework = 3;
   repeated Result results = 4;
   bytes code = 5;
+  string hash = 6;
 }
 
 message Result {

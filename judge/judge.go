@@ -24,6 +24,8 @@ import (
 	"github.com/NTHU-lsalab/sb/pb"
 
 	"google.golang.org/grpc"
+
+	"golang.org/x/crypto/ssh"
 )
 
 var username string
@@ -137,8 +139,8 @@ func compile(ctx context.Context, rule Rule, dir string) bool {
 // OptionalFile specifies the name of an optional file and the fallback file
 // if the file is not found
 type OptionalFile struct {
-	Name     string
-	Fallback string
+	Name           string
+	Fallback       string
 }
 
 // Rule defines a rule of a given homework
@@ -285,7 +287,7 @@ func removeAllVerbose(directory string) {
 	os.RemoveAll(directory)
 }
 
-func judge(ctx context.Context, rule Rule, cases []string) []*pb.Result {
+func judge(ctx context.Context, rule Rule, cases []string, remoteClient bool) []*pb.Result {
 	var exe string
 	if rule.SkipCompile {
 		exe = rule.Target
@@ -301,7 +303,13 @@ func judge(ctx context.Context, rule Rule, cases []string) []*pb.Result {
 	requests := make(chan judgeRequest)
 	responses := make(chan judgeResult)
 
-	for i := 0; i < 4; i++ {
+	parallelRunners := 1
+	if remoteClient {
+		parallelRunners = 2
+	} else {
+		parallelRunners = sb.ParallelRunners_SLURM
+	}
+	for i := 0; i < parallelRunners; i++ {
 		go func() {
 			for r := range requests {
 				responses <- judgeCase(ctx, r)
@@ -373,6 +381,68 @@ func judge(ctx context.Context, rule Rule, cases []string) []*pb.Result {
 	return result
 }
 
+func expandPath(path string) (string, error) {
+	if len(path) == 0 || path[0] != '~' {
+		return path, nil
+	}
+
+	usr, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(usr.HomeDir, path[1:]), nil
+}
+
+func publicKeyAuthFunc(KeyPath string) ssh.AuthMethod {
+	keyAbsPath, err := expandPath(KeyPath)
+	log.Println("Using ssh key from", keyAbsPath)
+	if err != nil {
+		log.Fatal("SSH key file read failed. ", err)
+	}
+	key, err := ioutil.ReadFile(keyAbsPath)
+	if err != nil {
+		log.Fatal("SSH key file read failed. ", err)
+	}
+
+	signer, err := ssh.ParsePrivateKey(key)
+	if err != nil {
+		log.Fatal("SSH key file read failed. ", err)
+	}
+	return ssh.PublicKeys(signer)
+}
+
+func AuthSSH(authDst string, username string, keyPath string) (status bool) {
+	log.Println("Trying SSH authentication, connecting to", authDst, "as", username)
+	key := publicKeyAuthFunc(keyPath)
+	config := &ssh.ClientConfig{
+		Timeout:         time.Second,
+		User:            username,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Auth:            []ssh.AuthMethod{key},
+	}
+	sshClient, err := ssh.Dial("tcp", authDst, config)
+	if err != nil {
+		log.Fatal("SSH connection failed. ", err)
+	}
+	defer sshClient.Close()
+
+	// Create SSH session
+	session, err := sshClient.NewSession()
+	if err != nil {
+		log.Fatal("SSH connection failed. ", err)
+	}
+
+	defer session.Close()
+
+	// Execute remote command
+	combo, err := session.CombinedOutput("whoami")
+	if err != nil {
+		log.Fatal("Remote execute cmd failed. ", err)
+	}
+	remoteOutput := strings.Split(string(combo), "\n")[0]
+	return remoteOutput == username
+}
+
 // Options is passed to MainOptions
 type Options struct {
 	Chdir        string
@@ -385,10 +455,12 @@ type Options struct {
 	Bin          string   // skip compiling and use the given binary. privileged.
 	MedianOf     int      // run each case multiple times and pick the median as the result
 	Debug        bool     // output debug messages
+	SSHAuthPort  int      // ssh authentication port for remote client (e.g., NCHC). The complete ssh ip is [Server (without the sb's port)]:[SSHAuthPort]
+	SSHKeyPath   string   // ssh authentication port for remote client (e.g., NCHC). The complete ssh ip is [Server (without the sb's port)]:[SSHAuthPort]
 }
 
 // MainOptions runs the judge with the given options
-func MainOptions(options *Options) {
+func MainOptions(options *Options, remoteClient bool) {
 	if options.Chdir != "" {
 		err := os.Chdir(options.Chdir)
 		if err != nil {
@@ -418,7 +490,7 @@ func MainOptions(options *Options) {
 	c := pb.NewScoreboardClient(conn)
 	var hw *pb.Homework
 	if options.RuleFile != "" {
-		if sb.Privileged() {
+		if sb.Privileged(remoteClient) {
 			hw = sb.LoadHomework(options.RuleFile)
 		} else {
 			log.Fatal("Cannot specify rule file when not privileged")
@@ -430,10 +502,26 @@ func MainOptions(options *Options) {
 		if err != nil {
 			log.Fatalf("failed to get homework %s: %v", options.Homework, err)
 		}
+		if remoteClient && hw.RemoteRunner == "" {
+			log.Fatalf("failed to get homework %s", options.Homework)
+		}
 	}
 
-	if options.AsUser != username && !sb.Privileged() {
-		log.Fatal("Cannot run as other user when not privileged")
+	submitUser := options.AsUser
+	if remoteClient {
+		//if options.AsUser == "root" || options.AsUser != username {
+			//serverIP := strings.Split(options.Server, ":")[0]
+			//authDst := fmt.Sprintf("%s:%d", serverIP, options.SSHAuthPort)
+			//if !AuthSSH(authDst, options.AsUser, options.SSHKeyPath) {
+			//	log.Fatal("Cannot run as other user when not privileged")
+			//}
+			//log.Println("Authenticate successfully using the username as", options.AsUser)
+			submitUser = sb.RemotePrefix + username
+		//}
+	} else {
+		if options.AsUser != username && !sb.Privileged(remoteClient) {
+			log.Fatal("Cannot run as other user when not privileged")
+		}
 	}
 
 	cases := make([]string, 0, len(hw.Cases))
@@ -463,9 +551,13 @@ func MainOptions(options *Options) {
 		log.Fatal("Refusing to pick a median from a even number of runs")
 	}
 
+	runnerFile := hw.Runner
+	if remoteClient {
+		runnerFile = hw.RemoteRunner
+	}
 	rule := Rule{
 		Target:   hw.Target,
-		Runner:   hw.Runner,
+		Runner:   runnerFile,
 		Optional: make([]OptionalFile, len(hw.Files)),
 		MedianOf: options.MedianOf,
 		Debug:    options.Debug,
@@ -473,11 +565,15 @@ func MainOptions(options *Options) {
 
 	for i, source := range hw.Files {
 		rule.Optional[i].Name = source.Name
-		rule.Optional[i].Fallback = source.Fallback
+		if remoteClient {
+			rule.Optional[i].Fallback = source.FallbackRemote
+		}else {
+			rule.Optional[i].Fallback = source.Fallback
+		}
 	}
 
 	if options.Bin != "" {
-		if sb.Privileged() {
+		if sb.Privileged(remoteClient) {
 			rule.SkipCompile = true
 			rule.Target = options.Bin
 		} else {
@@ -485,17 +581,20 @@ func MainOptions(options *Options) {
 		}
 	}
 
-	result := judge(ctx, rule, cases)
+	result := judge(ctx, rule, cases, remoteClient)
 	if len(result) == 0 {
 		return
 	}
 	cancel()
+	// Hash
+	hash := sb.HashSubmission(submitUser, hw.Name, sb.HashResult(result))
 
 	sbCtx, sbCancel := context.WithTimeout(context.Background(), time.Second*3)
 	r, err := c.Submit(sbCtx, &pb.UserSubmission{
-		User:     options.AsUser,
+		User:     submitUser,
 		Homework: hw.Name,
 		Results:  result,
+		Hash:     hash,
 	})
 	if err != nil {
 		log.Fatalf("failed to submit results to scoreboard: %v", err)
